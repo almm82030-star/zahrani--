@@ -81,12 +81,12 @@
     <h5>🔍 البحث عن مركبة</h5>
     <form id="searchForm" class="row g-3">
       <div class="col-md-6">
-        <label class="form-label">ابحث برقم البيان الجمركي</label>
-        <input type="text" id="searchCustomsNo" class="form-control">
+        <label class="form-label">بحث برقم الشاصي</label>
+        <input type="text" id="searchChassis" class="form-control" placeholder="مثال: ABC123456789">
       </div>
       <div class="col-md-6">
-        <label class="form-label">أو ابحث باللون</label>
-        <input type="text" id="searchColor" class="form-control">
+        <label class="form-label">بحث باللون</label>
+        <input type="text" id="searchColor" class="form-control" placeholder="مثال: أبيض">
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary mt-3">بحث</button>
@@ -96,7 +96,7 @@
 
   <!-- جدول عرض النتائج -->
   <div class="card p-4">
-    <h5>📑 النتائج</h5>
+    <h5>📑 بيانات المركبة</h5>
     <div class="table-responsive">
       <table class="table table-bordered table-hover" id="resultsTable">
         <thead>
@@ -105,7 +105,7 @@
             <th>التاريخ</th>
             <th>سنة الصنع</th>
             <th>بلد الصنع</th>
-            <th>رقم القاعدة</th>
+            <th>رقم القاعدة (الشاصي)</th>
             <th>رقم المحرك</th>
             <th>اللون</th>
             <th>الوزن</th>
@@ -135,7 +135,7 @@
     function renderTable(data) {
       resultsTable.innerHTML = "";
       if (data.length === 0) {
-        resultsTable.innerHTML = "<tr><td colspan='15'>⚠️ لا توجد بيانات مطابقة</td></tr>";
+        resultsTable.innerHTML = "<tr><td colspan='15'>⚠️ لم يتم العثور على بيانات</td></tr>";
         return;
       }
       data.forEach(car => {
@@ -190,22 +190,25 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // البحث
+    // البحث برقم الشاصي أو اللون
     searchForm.addEventListener("submit", function(e) {
       e.preventDefault();
-      const customsNo = document.getElementById("searchCustomsNo").value.trim();
+      const chassis = document.getElementById("searchChassis").value.trim();
       const color = document.getElementById("searchColor").value.trim();
 
-      let results = cars.filter(car => {
-        return (customsNo && car.customs_no === customsNo) ||
-               (color && car.color === color);
-      });
+      let results = [];
+      if (chassis) {
+        results = cars.filter(car => car.chassis === chassis);
+      } else if (color) {
+        results = cars.filter(car => car.color.includes(color));
+      }
 
       renderTable(results);
     });
 
     // عند فتح الصفحة
-    renderTable(cars);
+    renderTable([]);
   </script>
 </body>
 </html>
+
