@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نظام المركبات - الزهراني</title>
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: "Tahoma", sans-serif;
+    }
+    header {
+      background: linear-gradient(90deg, #0d6efd, #0056b3);
+      padding: 15px;
+      text-align: center;
+      color: white;
+      margin-bottom: 25px;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    header img {
+      max-height: 80px;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      border: none;
+      margin-bottom: 25px;
+    }
+    h5 {
+      color: #0d6efd;
+      margin-bottom: 20px;
+    }
+    th {
+      background: #0d6efd;
+      color: white;
+      text-align: center;
+    }
+    td {
+      text-align: center;
+    }
+    .btn-primary {
+      background: #0d6efd;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #004085;
+    }
+    .btn-success {
+      background: #198754;
+      border: none;
+    }
+    .btn-success:hover {
+      background: #146c43;
+    }
+  </style>
+</head>
+<body class="container py-4">
+
+  <!-- الهيدر مع الشعار -->
+  <header>
+    <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=375,fit=crop,q=95/dOqNLp8LNNTl7Vlk/alzahrani-logistics-corporate-logo-photoroom-AR03Qav69VTGKk9B.png" alt="شعار الزهراني">
+    <h1>📋 نظام إدارة المركبات</h1>
+  </header>
+
+  <!-- رفع ملف إكسل -->
+  <div class="card p-4">
+    <h5>📂 رفع ملف Excel</h5>
+    <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control mb-3">
+    <button class="btn btn-success" onclick="loadExcel()">رفع وتحميل البيانات</button>
+  </div>
+
+  <!-- نموذج بحث -->
+  <div class="card p-4">
+    <h5>🔍 البحث عن مركبة</h5>
+    <form id="searchForm" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">ابحث برقم البيان الجمركي</label>
+        <input type="text" id="searchCustomsNo" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">أو ابحث باللون</label>
+        <input type="text" id="searchColor" class="form-control">
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary mt-3">بحث</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- جدول عرض النتائج -->
+  <div class="card p-4">
+    <h5>📑 النتائج</h5>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover" id="resultsTable">
+        <thead>
+          <tr>
+            <th>رقم البطاقة</th>
+            <th>التاريخ</th>
+            <th>سنة الصنع</th>
+            <th>بلد الصنع</th>
+            <th>رقم القاعدة</th>
+            <th>رقم المحرك</th>
+            <th>اللون</th>
+            <th>الوزن</th>
+            <th>الحمولة</th>
+            <th>عدد الركاب</th>
+            <th>قوة المحرك</th>
+            <th>اسم المستورد</th>
+            <th>رقم البيان الجمركي</th>
+            <th>تاريخ البيان</th>
+            <th>الرسوم الجمركية</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- مكتبة قراءة Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    let cars = JSON.parse(localStorage.getItem("cars")) || [];
+
+    const resultsTable = document.querySelector("#resultsTable tbody");
+    const searchForm = document.getElementById("searchForm");
+
+    // عرض البيانات في الجدول
+    function renderTable(data) {
+      resultsTable.innerHTML = "";
+      if (data.length === 0) {
+        resultsTable.innerHTML = "<tr><td colspan='15'>⚠️ لا توجد بيانات مطابقة</td></tr>";
+        return;
+      }
+      data.forEach(car => {
+        let row = "<tr>";
+        Object.values(car).forEach(val => {
+          row += `<td>${val || ""}</td>`;
+        });
+        row += "</tr>";
+        resultsTable.innerHTML += row;
+      });
+    }
+
+    // تحميل ملف Excel
+    function loadExcel() {
+      const file = document.getElementById("excelFile").files[0];
+      if (!file) {
+        alert("⚠️ الرجاء اختيار ملف Excel أولاً");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: "array"});
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        // نحفظ البيانات
+        cars = jsonData.map(row => ({
+          card_number: row["رقم البطاقة"] || "",
+          date: row["التاريخ"] || "",
+          year: row["سنة الصنع"] || "",
+          country: row["بلد الصنع"] || "",
+          chassis: row["رقم القاعدة (الشاصي)"] || "",
+          engine: row["رقم المحرك"] || "",
+          color: row["اللون"] || "",
+          weight: row["الوزن"] || "",
+          capacity: row["الحمولة"] || "",
+          passengers: row["عدد الركاب"] || "",
+          engine_power: row["قوة المحرك"] || "",
+          importer: row["اسم المستورد"] || "",
+          customs_no: row["رقم البيان الجمركي"] || "",
+          customs_date: row["تاريخ البيان"] || "",
+          fees: row["الرسوم الجمركية"] || ""
+        }));
+
+        localStorage.setItem("cars", JSON.stringify(cars));
+        renderTable(cars);
+        alert("✅ تم رفع وتحميل البيانات بنجاح");
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // البحث
+    searchForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const customsNo = document.getElementById("searchCustomsNo").value.trim();
+      const color = document.getElementById("searchColor").value.trim();
+
+      let results = cars.filter(car => {
+        return (customsNo && car.customs_no === customsNo) ||
+               (color && car.color === color);
+      });
+
+      renderTable(results);
+    });
+
+    // عند فتح الصفحة
+    renderTable(cars);
+  </script>
+</body>
+</html>
